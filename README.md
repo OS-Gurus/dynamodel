@@ -50,13 +50,6 @@ import dynaModel from '@os-gurus/dynamodel'
 const ddb = new DynamoDB.DocumentClient({ region: 'us-east-1' })
 const table = `service-user-data-${process.env.STAGE}`
 
-const {
-  makeGet,
-  makeGetAll,
-  makeGetProperty,
-  makeUpdateProperty
-} = dynaModel<{ userId: string }>(ddb, table)
-
 type UserData = {
   name: string
   address: {
@@ -64,11 +57,14 @@ type UserData = {
   }
 }
 
+const modeller = dynaModel<{ userId: string }>(ddb, table).make<UserData>()
+
 export const userModel = {
-  getUser: makeGet<UserModel>(),
-  getUserName: makeGetProperty<UserModel>('name'),
-  updateUserName: makeUpdateProperty<UserModel>('name')
-  updateUserCountry: makeUpdateProperty<UserModel>('address.country')
+  getUser: modeller.get(),
+  getUserName: modeller.getProperty('name'),
+  updateUserName: modeller.updateProperty('name')
+  updateUserCountry: modeller.updateProperty('address.country')
+  setDefaultCountry: modeller.insertProperty('address.country')
 }
 ```
 
