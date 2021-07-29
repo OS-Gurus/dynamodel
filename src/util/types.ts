@@ -30,13 +30,13 @@ type Join<K, P> = K extends string | number
       ? '' : '.'}${P}` : never
   : never;
 
-export type Paths<T, D extends number = 3> = [D] extends [never] ? never : T extends Record<string, unknown> ?
+export type Paths<T, D extends number = 2> = [D] extends [never] ? never : T extends Record<string, unknown> ?
     { [K in keyof T]-?: K extends string | number
         ? `${K}` | Join<K, Paths<T[K], Prev[D]>>
         : never
     }[keyof T] : ''
 
-export type AtPath<T, P extends Paths<T, 3>> = Object.Path<T, String.Split<P, '.'>>
+export type AtPath<T, P extends Paths<T, 2>> = Object.Path<T, String.Split<P, '.'>>
 
 /** Make all props not optional without removing undefined from value types. */
 export type NonPartial<T> = { [K in keyof Required<T>]: T[K] };

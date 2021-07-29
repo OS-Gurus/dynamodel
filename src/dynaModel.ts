@@ -85,7 +85,7 @@ export const dynaModel = <
    *   const getUserName = makeGetPropertyById<UserData>('name')
    *   const userName = await getUserName('a_user_id')
    */
-  function makeGetProperty (property: Paths<Props>) {
+  function makeGetProperty (property: Paths<Props, 2>) {
     return async (Key: HashKeys) => {
       const { Item } = await ddb.get({
         TableName,
@@ -121,7 +121,7 @@ export const dynaModel = <
    *   const updateUserName = set<UserData>('name')
    *   await updateUserName('a_user_id', 'a_user_name')
    */
-  function makeUpdateProperty <Path extends Paths<Props>>(property: Path) {
+  function makeUpdateProperty <Path extends Paths<Props, 2>> (property: Path) {
     return async (Key: HashKeys, valueAtPath: AtPath<NonPartial<Props>, Path>) => {
       const paths = property.split('.')
       const value = nestedValue(paths, valueAtPath)
@@ -161,7 +161,7 @@ export const dynaModel = <
    *   const updateUserName = set<UserData>('name')
    *   await updateUserName('a_user_id', 'a_user_name')
    */
-  function makeInsertProperty <Path extends Paths<Props>>(property: Path) {
+  function makeInsertProperty <Path extends Paths<Props, 2>> (property: Path) {
     return async (Key: HashKeys, valueAtPath: AtPath<NonPartial<Props>, Path>) => {
       const paths = property.split('.')
       const value = nestedValue(paths, valueAtPath)

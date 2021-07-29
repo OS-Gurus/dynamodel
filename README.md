@@ -71,4 +71,10 @@ export const userModel = {
 }
 ```
 
+### Known Issues
+
+There's a problem with generating the argument type for property paths from a given object type. It ends up creating quite large definition files that are slow to load and deliver type hinting in the IDE. I know there's better solutions out there in some TS utility packages, just need to find the right approach for this usage. For now I've reduced the depth of the `Paths` utility type to make the definition files manageable.
+
+---
+
 That's all the docs I've got time for right now sorry. Try it out. The types are nice.

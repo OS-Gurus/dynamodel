@@ -44,7 +44,7 @@ export const insertExpression = (paths: string[]) =>
   `#${paths.join('.#')} = if_not_exists(#${paths.join('.#')}, :value)`
 
 export const updateValues = <T>(paths: string[], value: T) =>
-  ({ ':value': atPath(value, paths.join('.') as Paths<T>) })
+  ({ ':value': atPath(value, paths.join('.') as Paths<T, 2>) })
 
 /** Get expression to access property at path. */
 export const getExpression = (paths: string[]) =>
