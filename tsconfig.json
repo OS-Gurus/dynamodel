@@ -4,7 +4,7 @@
   "compilerOptions": {
     "strict": true,
     "lib": ["DOM", "ES2017"],
-    "types": ["jest"],
+    "types": ["jest", "node"],
     "outDir": "dist/",
     "target": "ES2017",
     "jsx": "preserve",

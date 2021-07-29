@@ -31,6 +31,8 @@ module.exports = {
     '*.config.js'
   ],
   rules: {
-    '@typescript-eslint/explicit-module-boundary-types': 'off'
+    '@typescript-eslint/explicit-module-boundary-types': 'off',
+    'jest/no-focused-tests': 'off',
+    'jest/no-disabled-tests': 'off'
   }
 }
