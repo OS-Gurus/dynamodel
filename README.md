@@ -21,13 +21,12 @@ import dynaModel from '@os-gurus/dynamodel'
 const ddb = new DynamoDB.DocumentClient({ region: 'us-east-1' })
 
 type HashKeys = { id: string }
+type Props = { address: { country: string } }
 
-type UserMeta = { address: { country: string } }
+const { makeUpdateProperty } = dynaModel<HashKeys, Props>(ddb, 'user-meta')
 
-const { updateProperty } = dynaModel<HashKeys>(ddb, 'user-meta').make<UserMeta>()
-
-const updateUserCountry = updateProperty('address.country')
-// prop paths are typed and autocomplete ☝️
+const updateUserCountry = makeUpdateProperty('address.country')
+// property paths are typed and autocomplete ☝️
 
 const updatedCountry = await updateCountry({ id: '111', 'AU' })
 // returns the updated country value, typed as `string` ☝️ (arguments are also typed)
@@ -50,6 +49,9 @@ import dynaModel from '@os-gurus/dynamodel'
 const ddb = new DynamoDB.DocumentClient({ region: 'us-east-1' })
 const table = `service-user-data-${process.env.STAGE}`
 
+type UserKeys = {
+  userId: string
+}
 type UserData = {
   name: string
   address: {
@@ -57,14 +59,14 @@ type UserData = {
   }
 }
 
-const modeller = dynaModel<{ userId: string }>(ddb, table).make<UserData>()
+const usersDB = dynaModel<UserKeys, UserData>(ddb, table)
 
 export const userModel = {
-  getUser: modeller.get(),
-  getUserName: modeller.getProperty('name'),
-  updateUserName: modeller.updateProperty('name')
-  updateUserCountry: modeller.updateProperty('address.country')
-  setDefaultCountry: modeller.insertProperty('address.country')
+  getUser: usersDB.makeGet(),
+  getUserName: usersDB.makeGetProperty('name'),
+  updateUserName: usersDB.makeUpdateProperty('name'),
+  updateUserCountry: usersDB.makeUpdateProperty('address.country'),
+  setDefaultCountry: usersDB.makeInsertProperty('address.country')
 }
 ```
 
