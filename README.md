@@ -16,7 +16,7 @@ Generate typed methods for DynamoDB models. With special sauce for nested props.
 DynaModel utility functions are instantiated with your DB connection, table and its items type, e.g.
 
 ```ts
-import dynaModel from '@os-gurus/dynamodel'
+import { dynaModel } from '@os-gurus/dynamodel'
 
 const ddb = new DynamoDB.DocumentClient({ region: 'us-east-1' })
 
@@ -45,7 +45,7 @@ In the instance of setting `address.country` where no `address` exists on the it
 ### Examples
 
 ```ts
-import dynaModel from '@os-gurus/dynamodel'
+import { dynaModel } from '@os-gurus/dynamodel'
 
 const ddb = new DynamoDB.DocumentClient({ region: 'us-east-1' })
 const table = `service-user-data-${process.env.STAGE}`

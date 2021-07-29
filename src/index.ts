@@ -1,1 +1,1 @@
-export { dynaModel } from './dynaModel'
+export * from './dynaModel'
