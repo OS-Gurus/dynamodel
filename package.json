@@ -1,6 +1,6 @@
 {
   "name": "@os-gurus/dynamodel",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Generate typed methods for DynamoDB models. With special sauce for nested props.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

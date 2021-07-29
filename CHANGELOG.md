@@ -1,3 +1,11 @@
+## [1.0.2](https://github.com/OS-Gurus/dynamodel/compare/v1.0.1...v1.0.2) (2021-07-29)
+
+
+### Bug Fixes
+
+* definition file size ([490db11](https://github.com/OS-Gurus/dynamodel/commit/490db11faff1ee6c45176bf4df97fc20ce9268a9))
+* exports ([2bfd53a](https://github.com/OS-Gurus/dynamodel/commit/2bfd53a752f5b117328b88b2d50053f3864b9a9b))
+
 ## [1.0.1](https://github.com/OS-Gurus/dynamodel/compare/v1.0.0...v1.0.1) (2021-07-29)
 
 
