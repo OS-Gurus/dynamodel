@@ -13,6 +13,9 @@
   ],
   "author": "Tim Kinnane <timkinnane@gmail.com>",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/OS-Gurus/dynamodel.git"
