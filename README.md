@@ -11,7 +11,7 @@ Generate typed methods for DynamoDB models. With special sauce for nested props.
 
 ---
 
-## Updating Nested Properties
+### Updating Nested Properties
 
 DynaModel utility functions are instantiated with your DB connection, table and its items type, e.g.
 
@@ -25,15 +25,16 @@ type Props = { address: { country: string } }
 
 const { makeUpdateProperty } = dynaModel<HashKeys, Props>(ddb, 'user-meta')
 
-const updateUserCountry = makeUpdateProperty('address.country')
-// property paths are typed and autocomplete ☝️
-
-const updatedCountry = await updateCountry({ id: '111', 'AU' })
-// returns the updated country value, typed as `string` ☝️ (arguments are also typed)
+function updateUserCountry (id: string, country: string) {
+  const update = makeUpdateProperty('address.country')
+  // property paths are typed and autocomplete ☝️
+  return update({ id }, country)
+  // returns updated value ☝️ typed as `string`, arguments are also typed
+}
 ```
 
 When making updates to nested properties, first it will attempt to set the value at the given path,
-but if the parent doesn't exist it will go recursively upward to create a parent object.
+but if the parent doesn't exist it will go recursively upward to create the parent object.
 
 This approach will amortize the cost of requests, as only the first update will result in multiple
 requests, subsequent updates will just set the nested property and return.
@@ -41,7 +42,7 @@ requests, subsequent updates will just set the nested property and return.
 In the instance of setting `address.country` where no `address` exists on the item, it would update
 `address` to `{ country: 'AU' }`. The next request would just set `address.country` to `AU`.
 
-## Examples
+### Examples
 
 ```ts
 import dynaModel from '@os-gurus/dynamodel'
