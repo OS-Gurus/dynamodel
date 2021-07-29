@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/OS-Gurus/dynamodel/compare/v1.0.0...v1.0.1) (2021-07-29)
+
+
+### Bug Fixes
+
+* add public publish config ([ac3013f](https://github.com/OS-Gurus/dynamodel/commit/ac3013f4370b2956b137423dd6fd38f0452675f1))
+
 # 1.0.0 (2021-07-29)
 
 
