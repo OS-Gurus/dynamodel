@@ -24,8 +24,8 @@ type TestProps = {
 const {
   makeGetAll,
   makeGet,
-  makeRemove,
   makeGetProperty,
+  makeRemove,
   makeInsertProperty,
   makeUpdateProperty
 } = dynaModel<typeof Key, TestProps>(ddb, TableName)
@@ -200,17 +200,19 @@ describe('providers > dynamo > dynaModel', () => {
   /** @todo Below for manual IDE type checking only. Need better tests for types; DTS-Jest? */
   describe.skip('return types', () => {
     it('updates return prop type', () => {
+      const getString = makeGetProperty('test') // eslint-disable-line
+      type ReturnStringConditional = ReturnType<typeof getString> // eslint-disable-line
+      // ☝️ expect: Promise<string | undefined>
+
       const updateNumber = makeUpdateProperty('testCount') // eslint-disable-line
       type ReturnNumber = ReturnType<typeof updateNumber> // eslint-disable-line
       // ☝️ expect: Promise<number>
 
-      const setBoolean = makeInsertProperty('testData') // eslint-disable-line
-      type ReturnBoolean = ReturnType<typeof setBoolean> // eslint-disable-line
+      const setNull = makeInsertProperty('nullable') // eslint-disable-line
+      type AssignNull = Parameters<typeof setNull>[1] // eslint-disable-line
+      // ☝️ expect: null
+      type ReturnNull = ReturnType<typeof setNull> // eslint-disable-line
       // ☝️ expect: Promise<boolean>
-
-      const getString = makeGetProperty('test') // eslint-disable-line
-      type ReturnStringConditional = ReturnType<typeof getString> // eslint-disable-line
-      // ☝️ expect: Promise<string | undefined>
 
       // const deleteNull = makeDeleteProperty<{ foo: null }>('foo') // eslint-disable-line
       // type ReturnNullConditional = ReturnType<typeof deleteNull> // eslint-disable-line

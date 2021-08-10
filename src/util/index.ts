@@ -1,3 +1,2 @@
-export * from './atPath'
-export * from './types'
+export * from './paths'
 export * from './expressions'

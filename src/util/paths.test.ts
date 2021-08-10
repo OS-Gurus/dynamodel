@@ -1,4 +1,4 @@
-import { atPath } from './atPath'
+import { atPath } from './paths'
 
 const testObj = {
   foo: true,
