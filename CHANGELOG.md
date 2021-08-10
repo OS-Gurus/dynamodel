@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/OS-Gurus/dynamodel/compare/v1.0.2...v1.0.3) (2021-08-10)
+
+
+### Bug Fixes
+
+* performance of type inference at path ([66cdfd0](https://github.com/OS-Gurus/dynamodel/commit/66cdfd0ab3e1fc8fb3fcf6db185254826a87b625))
+
 ## [1.0.2](https://github.com/OS-Gurus/dynamodel/compare/v1.0.1...v1.0.2) (2021-07-29)
 
 
