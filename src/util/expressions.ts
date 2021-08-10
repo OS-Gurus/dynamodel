@@ -1,6 +1,5 @@
 import { AWSError } from 'aws-sdk'
-import { atPath } from './atPath'
-import { Paths } from './types'
+import { atPaths } from './paths'
 
 export const metaAttributeNames = () => ({
   '#createdAt': 'createdAt',
@@ -43,8 +42,8 @@ export const updateExpression = (paths: string[]) =>
 export const insertExpression = (paths: string[]) =>
   `#${paths.join('.#')} = if_not_exists(#${paths.join('.#')}, :value)`
 
-export const updateValues = <T>(paths: string[], value: T) =>
-  ({ ':value': atPath(value, paths.join('.') as Paths<T, 2>) })
+export const updateValues = (paths: string[], value: unknown) =>
+  ({ ':value': atPaths(value, paths) })
 
 /** Get expression to access property at path. */
 export const getExpression = (paths: string[]) =>

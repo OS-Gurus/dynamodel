@@ -1,9 +1,7 @@
+import { DocumentClient } from 'aws-sdk/clients/dynamodb'
 import {
-  Item,
-  Paths,
   AtPath,
   atPath,
-  NonPartial,
   attributeNames,
   updateExpression,
   metaAttributeNames,
@@ -15,9 +13,24 @@ import {
   nestedCondition,
   insertExpression,
   getExpression,
-  nestedValue
+  nestedValue,
+  PathOf
 } from './util'
-import { DynamoDB } from 'aws-sdk'
+
+/** Props on all items, merged with consumer defined attributes. */
+type MetaProps = { createdAt: string, updatedAt: string }
+
+/** Make all props not optional without removing undefined from value types. */
+export type NonPartial<T> = { [K in keyof Required<T>]: T[K] };
+
+/**
+ * Define DDB record type, merges meta with given attribute types and default meta.
+ * @param Props Attributes to merge into item type, can be subset of item in DB for a given model.
+ * @example
+ *   type UserItem = Item<{ name: string }, { userId: string }>
+ *   // ☝️ type UserItem = { userId: string, name: string, createdAt: string, updatedAt: string }
+ */
+type Item<Props, Key extends DocumentClient.Key> = Key & Props & MetaProps
 
 /**
  * Provides a suite of functions to construct a typed DynamoDB data model CRUD interface.
@@ -35,9 +48,9 @@ import { DynamoDB } from 'aws-sdk'
  *   }
  */
 export const dynaModel = <
-  HashKeys extends DynamoDB.DocumentClient.Key,
+  HashKeys extends DocumentClient.Key,
   Props
->(ddb: DynamoDB.DocumentClient, TableName: string) => {
+>(ddb: DocumentClient, TableName: string) => {
   /**
    * Get all items of a given type
    * @example
@@ -85,16 +98,16 @@ export const dynaModel = <
    *   const getUserName = makeGetPropertyById<UserData>('name')
    *   const userName = await getUserName('a_user_id')
    */
-  function makeGetProperty (property: Paths<Props, 2>) {
-    return async (Key: HashKeys) => {
+  function makeGetProperty <P extends string> (path: PathOf<Props, P>) {
+    return async <T extends AtPath<Props, P>>(Key: HashKeys) => {
       const { Item } = await ddb.get({
         TableName,
         Key,
-        ExpressionAttributeNames: attributeNames(property.split('.')),
-        ProjectionExpression: getExpression(property.split('.'))
+        ExpressionAttributeNames: attributeNames(path.split('.')),
+        ProjectionExpression: getExpression(path.split('.'))
       }).promise()
       return Item
-        ? atPath(Item as Props, property)
+        ? atPath(Item, path) as T
         : undefined
     }
   }
@@ -121,9 +134,9 @@ export const dynaModel = <
    *   const updateUserName = set<UserData>('name')
    *   await updateUserName('a_user_id', 'a_user_name')
    */
-  function makeUpdateProperty <Path extends Paths<Props, 2>> (property: Path) {
-    return async (Key: HashKeys, valueAtPath: AtPath<NonPartial<Props>, Path>) => {
-      const paths = property.split('.')
+  function makeUpdateProperty <P extends string> (path: PathOf<Props, P>) {
+    return async <T extends AtPath<Props, P>>(Key: HashKeys, valueAtPath: T): Promise<T> => {
+      const paths = path.split('.')
       const value = nestedValue(paths, valueAtPath)
       for (const index of paths.keys()) {
         paths.splice(-1, index)
@@ -145,10 +158,11 @@ export const dynaModel = <
             updateExpression(paths)
           ])
         }).promise().catch(handleFailedCondition)
-        if (result && result.Attributes) {
-          return atPath<Props, Path>(result.Attributes as unknown as Props, property)
+        if (result?.Attributes) {
+          return atPath(result.Attributes, path) as Promise<T>
         }
       }
+      throw new Error(`No attributes returned from update to ${path} on ${TableName}`)
     }
   }
 
@@ -161,9 +175,9 @@ export const dynaModel = <
    *   const updateUserName = set<UserData>('name')
    *   await updateUserName('a_user_id', 'a_user_name')
    */
-  function makeInsertProperty <Path extends Paths<Props, 2>> (property: Path) {
-    return async (Key: HashKeys, valueAtPath: AtPath<NonPartial<Props>, Path>) => {
-      const paths = property.split('.')
+  function makeInsertProperty <P extends string> (path: PathOf<Props, P>) {
+    return async <T extends AtPath<Props, P>>(Key: HashKeys, valueAtPath: T) => {
+      const paths = path.split('.')
       const value = nestedValue(paths, valueAtPath)
       for (const index of paths.keys()) {
         paths.splice(-1, index)
@@ -186,7 +200,7 @@ export const dynaModel = <
           ])
         }).promise().catch(handleFailedCondition)
         if (result && result.Attributes) {
-          return atPath<Props, Path>(result.Attributes as unknown as Props, property)
+          return atPath(result.Attributes, path) as Promise<T>
         }
       }
     }
