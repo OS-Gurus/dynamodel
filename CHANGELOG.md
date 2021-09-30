@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/OS-Gurus/dynamodel/compare/v1.1.0...v1.1.1) (2021-09-30)
+
+
+### Bug Fixes
+
+* projection option return type overloads ([#4](https://github.com/OS-Gurus/dynamodel/issues/4)) ([edda206](https://github.com/OS-Gurus/dynamodel/commit/edda206ac334d34ed19be68a968775645b435d6a))
+
 # [1.1.0](https://github.com/OS-Gurus/dynamodel/compare/v1.0.3...v1.1.0) (2021-09-30)
 
 
