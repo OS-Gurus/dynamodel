@@ -32,16 +32,8 @@ export type NonPartial<T> = { [K in keyof Required<T>]: T[K] };
  */
 type Item<Props, Key extends DocumentClient.Key> = Key & Props & MetaProps
 
-/** Options for update/insert methods. */
-type Options = {
-  /** Return the touched attributes, or the whole item */
-  projection?: 'Item' | 'Attributes'
-}
-
-/** Default options to merge with given. */
-const defaults: Options = {
-  projection: 'Attributes'
-}
+/** Option for update/insert methods. */
+type Projection = 'Item' | 'Attributes'
 
 /**
  * Provides a suite of functions to construct a typed DynamoDB data model CRUD interface.
@@ -145,8 +137,11 @@ export const dynaModel = <
    *   const updateUserName = set<UserData>('name')
    *   await updateUserName('a_user_id', 'a_user_name')
    */
-  function makeUpdateProperty <P extends string> (path: PathOf<Props, P>, options: Options = {}) {
-    const { projection } = { ...defaults, ...options }
+  function makeUpdateProperty <P extends string> (path: PathOf<Props, P>, projection?: 'Item'):
+    <T extends AtPath<Props, P>>(Key: HashKeys, valueAtPath: T) => Promise<Item<Props, HashKeys>>
+  function makeUpdateProperty <P extends string> (path: PathOf<Props, P>, projection?: 'Attributes'):
+    <T extends AtPath<Props, P>>(Key: HashKeys, valueAtPath: T) => Promise<T>
+  function makeUpdateProperty <P extends string> (path: PathOf<Props, P>, projection: Projection = 'Attributes') {
     return async <T extends AtPath<Props, P>>(Key: HashKeys, valueAtPath: T) => {
       const paths = path.split('.')
       const value = nestedValue(paths, valueAtPath)
@@ -172,8 +167,8 @@ export const dynaModel = <
         }).promise().catch(handleFailedCondition)
         if (result?.Attributes) {
           return projection === 'Attributes'
-            ? atPath(result.Attributes, path) as T
-            : result.Attributes as Item<Props, HashKeys>
+            ? atPath(result.Attributes, path)
+            : result.Attributes
         }
       }
       throw new Error(`No attributes returned from update to ${path} on ${TableName}`)
@@ -189,9 +184,12 @@ export const dynaModel = <
    *   const updateUserName = set<UserData>('name')
    *   await updateUserName('a_user_id', 'a_user_name')
    */
-  function makeInsertProperty <P extends string> (path: PathOf<Props, P>, options: Options = {}) {
+  function makeInsertProperty <P extends string> (path: PathOf<Props, P>, projection?: 'Item'):
+    <T extends AtPath<Props, P>>(Key: HashKeys, valueAtPath: T) => Promise<Item<Props, HashKeys>>
+  function makeInsertProperty <P extends string> (path: PathOf<Props, P>, projection?: 'Attributes'):
+    <T extends AtPath<Props, P>>(Key: HashKeys, valueAtPath: T) => Promise<T>
+  function makeInsertProperty <P extends string> (path: PathOf<Props, P>, projection: Projection = 'Attributes') {
     return async <T extends AtPath<Props, P>>(Key: HashKeys, valueAtPath: T) => {
-      const { projection } = { ...defaults, ...options }
       const paths = path.split('.')
       const value = nestedValue(paths, valueAtPath)
       for (const index of paths.keys()) {
@@ -216,8 +214,8 @@ export const dynaModel = <
         }).promise().catch(handleFailedCondition)
         if (result && result.Attributes) {
           return projection === 'Attributes'
-            ? atPath(result.Attributes, path) as T
-            : result.Attributes as Item<Props, HashKeys>
+            ? atPath(result.Attributes, path)
+            : result.Attributes
         }
       }
     }
