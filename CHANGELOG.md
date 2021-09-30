@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/OS-Gurus/dynamodel/compare/v1.0.3...v1.1.0) (2021-09-30)
+
+
+### Features
+
+* add option to return item on prop updates ([#3](https://github.com/OS-Gurus/dynamodel/issues/3)) ([118d326](https://github.com/OS-Gurus/dynamodel/commit/118d326b7f932aa14fcb6a60887f95f193e9a3db))
+
 ## [1.0.3](https://github.com/OS-Gurus/dynamodel/compare/v1.0.2...v1.0.3) (2021-08-10)
 
 
