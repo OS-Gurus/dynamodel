@@ -32,6 +32,8 @@ module.exports = {
   ],
   rules: {
     '@typescript-eslint/explicit-module-boundary-types': 'off',
+    'no-redeclare': 'off',
+    '@typescript-eslint/no-redeclare': ['error'],
     'jest/no-focused-tests': 'off',
     'jest/no-disabled-tests': 'off'
   }
