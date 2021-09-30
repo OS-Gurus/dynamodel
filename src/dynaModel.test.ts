@@ -104,27 +104,54 @@ describe('providers > dynamo > dynaModel', () => {
   })
   describe('makeInsertProperty', () => {
     describe('with root property', () => {
-      it('without existing item, function creates item and property, sets meta, returns value', async () => {
-        const inserted = await makeInsertProperty('testData')(Key, { foo: true })
-        const found = await ddb.get({ TableName, Key }).promise()
-        expect(inserted)
-          .toEqual({ foo: true })
-        expect((found.Item as TestProps))
-          .toEqual({ ...Key, testData: { foo: true }, ...expectMeta })
+      describe('without options (attribute mode)', () => {
+        it('without existing item, function creates item and property, sets meta, returns value', async () => {
+          const inserted = await makeInsertProperty('testData')(Key, { foo: true })
+          const found = await ddb.get({ TableName, Key }).promise()
+          expect(inserted)
+            .toEqual({ foo: true })
+          expect((found.Item as TestProps))
+            .toEqual({ ...Key, testData: { foo: true }, ...expectMeta })
+        })
+        it('without existing prop, function sets property and returns value', async () => {
+          await ddb.put({ TableName, Item }).promise()
+          await expect(makeInsertProperty('testData')(Key, { foo: true }))
+            .resolves.toEqual({ foo: true })
+        })
+        it('with existing prop, function does nothing, returns existing', async () => {
+          await ddb.put({ TableName, Item: { ...Item, testData: { foo: false } } }).promise()
+          const inserted = await makeInsertProperty('testData')(Key, { foo: true })
+          const found = await ddb.get({ TableName, Key }).promise()
+          expect(inserted)
+            .toEqual({ foo: false })
+          expect((found.Item as TestProps).testData)
+            .toEqual({ foo: false })
+        })
       })
-      it('without existing prop, function sets property and returns value', async () => {
-        await ddb.put({ TableName, Item }).promise()
-        await expect(makeInsertProperty('testData')(Key, { foo: true }))
-          .resolves.toEqual({ foo: true })
-      })
-      it('with existing prop, function does nothing, returns existing', async () => {
-        await ddb.put({ TableName, Item: { ...Item, testData: { foo: false } } }).promise()
-        const inserted = await makeInsertProperty('testData')(Key, { foo: true })
-        const found = await ddb.get({ TableName, Key }).promise()
-        expect(inserted)
-          .toEqual({ foo: false })
-        expect((found.Item as TestProps).testData)
-          .toEqual({ foo: false })
+      describe('with options (item mode)', () => {
+        it('without existing item, function creates item and property, sets meta, returns item', async () => {
+          const inserted = await makeInsertProperty('testData', { projection: 'Item' })(Key, { foo: true })
+          const found = await ddb.get({ TableName, Key }).promise()
+          expect(inserted)
+            .toEqual({ ...Key, testData: { foo: true }, ...expectMeta })
+          expect((found.Item as TestProps))
+            .toEqual({ ...Key, testData: { foo: true }, ...expectMeta })
+        })
+        it('without existing prop, function sets property (and meta) and returns item', async () => {
+          await ddb.put({ TableName, Item }).promise()
+          const inserted = await makeInsertProperty('testData', { projection: 'Item' })(Key, { foo: true })
+          expect(inserted as TestProps)
+            .toEqual({ ...Item, testData: { foo: true }, ...expectMeta })
+        })
+        it('with existing prop, function does nothing, returns existing item', async () => {
+          await ddb.put({ TableName, Item: { ...Item, testData: { foo: false } } }).promise()
+          const inserted = await makeInsertProperty('testData', { projection: 'Item' })(Key, { foo: true })
+          const found = await ddb.get({ TableName, Key }).promise()
+          expect(inserted)
+            .toEqual({ ...Item, testData: { foo: false }, ...expectMeta })
+          expect((found.Item as TestProps).testData)
+            .toEqual({ foo: false })
+        })
       })
     })
     describe('with nested property', () => {
@@ -167,24 +194,6 @@ describe('providers > dynamo > dynaModel', () => {
     })
   })
   describe('makeUpdateProperty', () => {
-    it('function assigns a property, returning changes', async () => {
-      await expect(makeUpdateProperty('testCount')(Key, 99))
-        .resolves.toEqual(99)
-    })
-    it('function assigns nested property, returning changes', async () => {
-      await expect(makeUpdateProperty('testData.foo')(Key, true))
-        .resolves.toEqual(true)
-    })
-    it('function updates a property, returning changes', async () => {
-      await ddb.put({ TableName, Item: { ...Item, testCount: 1 } }).promise()
-      await expect(makeUpdateProperty('testCount')(Key, 99))
-        .resolves.toEqual(99)
-    })
-    it('function updates nested property, returning changes', async () => {
-      await ddb.put({ TableName, Item: { ...Item, testData: { foo: false } } }).promise()
-      await expect(makeUpdateProperty('testData.foo')(Key, true))
-        .resolves.toEqual(true)
-    })
     it('functions assign to objects without effecting other properties', async () => {
       await ddb.put({ TableName, Item }).promise()
       await makeUpdateProperty('testData.foo')(Key, false)
@@ -195,6 +204,46 @@ describe('providers > dynamo > dynaModel', () => {
           foo: false,
           bar: false
         })
+    })
+    describe('without options (attribute mode)', () => {
+      it('function assigns a property, returning changes', async () => {
+        await expect(makeUpdateProperty('testCount')(Key, 99))
+          .resolves.toEqual(99)
+      })
+      it('function assigns nested property, returning changes', async () => {
+        await expect(makeUpdateProperty('testData.foo')(Key, true))
+          .resolves.toEqual(true)
+      })
+      it('function updates a property, returning changes', async () => {
+        await ddb.put({ TableName, Item: { ...Item, testCount: 1 } }).promise()
+        await expect(makeUpdateProperty('testCount')(Key, 99))
+          .resolves.toEqual(99)
+      })
+      it('function updates nested property, returning changes', async () => {
+        await ddb.put({ TableName, Item: { ...Item, testData: { foo: false } } }).promise()
+        await expect(makeUpdateProperty('testData.foo')(Key, true))
+          .resolves.toEqual(true)
+      })
+    })
+    describe('with options (item mode)', () => {
+      it('function assigns a property, returning item', async () => {
+        await expect(makeUpdateProperty('testCount', { projection: 'Item' })(Key, 99))
+          .resolves.toEqual({ ...Key, testCount: 99, ...expectMeta })
+      })
+      it('function assigns nested property, returning item', async () => {
+        await expect(makeUpdateProperty('testData.foo', { projection: 'Item' })(Key, true))
+          .resolves.toEqual({ ...Key, testData: { foo: true }, ...expectMeta })
+      })
+      it('function updates a property, returning item', async () => {
+        await ddb.put({ TableName, Item: { ...Item, testCount: 1 } }).promise()
+        await expect(makeUpdateProperty('testCount', { projection: 'Item' })(Key, 99))
+          .resolves.toEqual({ ...Item, testCount: 99, ...expectMeta })
+      })
+      it('function updates nested property, returning item', async () => {
+        await ddb.put({ TableName, Item: { ...Item, testData: { foo: false } } }).promise()
+        await expect(makeUpdateProperty('testData.foo', { projection: 'Item' })(Key, true))
+          .resolves.toEqual({ ...Item, testData: { foo: true }, ...expectMeta })
+      })
     })
   })
   /** @todo Below for manual IDE type checking only. Need better tests for types; DTS-Jest? */

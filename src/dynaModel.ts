@@ -32,6 +32,17 @@ export type NonPartial<T> = { [K in keyof Required<T>]: T[K] };
  */
 type Item<Props, Key extends DocumentClient.Key> = Key & Props & MetaProps
 
+/** Options for update/insert methods. */
+type Options = {
+  /** Return the touched attributes, or the whole item */
+  projection?: 'Item' | 'Attributes'
+}
+
+/** Default options to merge with given. */
+const defaults: Options = {
+  projection: 'Attributes'
+}
+
 /**
  * Provides a suite of functions to construct a typed DynamoDB data model CRUD interface.
  * @param ddb An instantiated DDB client so configuration is delegated to consumer
@@ -134,8 +145,9 @@ export const dynaModel = <
    *   const updateUserName = set<UserData>('name')
    *   await updateUserName('a_user_id', 'a_user_name')
    */
-  function makeUpdateProperty <P extends string> (path: PathOf<Props, P>) {
-    return async <T extends AtPath<Props, P>>(Key: HashKeys, valueAtPath: T): Promise<T> => {
+  function makeUpdateProperty <P extends string> (path: PathOf<Props, P>, options: Options = {}) {
+    const { projection } = { ...defaults, ...options }
+    return async <T extends AtPath<Props, P>>(Key: HashKeys, valueAtPath: T) => {
       const paths = path.split('.')
       const value = nestedValue(paths, valueAtPath)
       for (const index of paths.keys()) {
@@ -159,7 +171,9 @@ export const dynaModel = <
           ])
         }).promise().catch(handleFailedCondition)
         if (result?.Attributes) {
-          return atPath(result.Attributes, path) as Promise<T>
+          return projection === 'Attributes'
+            ? atPath(result.Attributes, path) as T
+            : result.Attributes as Item<Props, HashKeys>
         }
       }
       throw new Error(`No attributes returned from update to ${path} on ${TableName}`)
@@ -175,8 +189,9 @@ export const dynaModel = <
    *   const updateUserName = set<UserData>('name')
    *   await updateUserName('a_user_id', 'a_user_name')
    */
-  function makeInsertProperty <P extends string> (path: PathOf<Props, P>) {
+  function makeInsertProperty <P extends string> (path: PathOf<Props, P>, options: Options = {}) {
     return async <T extends AtPath<Props, P>>(Key: HashKeys, valueAtPath: T) => {
+      const { projection } = { ...defaults, ...options }
       const paths = path.split('.')
       const value = nestedValue(paths, valueAtPath)
       for (const index of paths.keys()) {
@@ -200,7 +215,9 @@ export const dynaModel = <
           ])
         }).promise().catch(handleFailedCondition)
         if (result && result.Attributes) {
-          return atPath(result.Attributes, path) as Promise<T>
+          return projection === 'Attributes'
+            ? atPath(result.Attributes, path) as T
+            : result.Attributes as Item<Props, HashKeys>
         }
       }
     }
