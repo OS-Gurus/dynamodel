@@ -192,6 +192,22 @@ describe('providers > dynamo > dynaModel', () => {
           .toEqual(false)
       })
     })
+    describe('with subsequent updates', () => {
+      it('maintains original created date', async () => {
+        const inserted = await makeInsertProperty('testData', 'Item')(Key, { foo: true })
+        const updated = await makeInsertProperty('testData', 'Item')(Key, { foo: false })
+        const found = await ddb.get({ TableName, Key }).promise()
+        expect(inserted.createdAt).toEqual(updated.createdAt)
+        expect(inserted.createdAt).toEqual(found?.Item?.createdAt)
+      })
+      it('updates original updated date', async () => {
+        const inserted = await makeInsertProperty('testData', 'Item')(Key, { foo: true })
+        const updated = await makeInsertProperty('testData', 'Item')(Key, { foo: false })
+        const found = await ddb.get({ TableName, Key }).promise()
+        expect(inserted.updatedAt).not.toEqual(updated.updatedAt)
+        expect(updated.updatedAt).toEqual(found?.Item?.updatedAt)
+      })
+    })
   })
   describe('makeUpdateProperty', () => {
     it('functions assign to objects without effecting other properties', async () => {
@@ -204,6 +220,22 @@ describe('providers > dynamo > dynaModel', () => {
           foo: false,
           bar: false
         })
+    })
+    describe('with subsequent updates', () => {
+      it('maintains original created date', async () => {
+        const inserted = await makeUpdateProperty('testData.foo', 'Item')(Key, true)
+        const updated = await makeUpdateProperty('testData.bar', 'Item')(Key, false)
+        const found = await ddb.get({ TableName, Key }).promise()
+        expect(inserted.createdAt).toEqual(updated.createdAt)
+        expect(inserted.createdAt).toEqual(found?.Item?.createdAt)
+      })
+      it('updates original updated date', async () => {
+        const inserted = await makeUpdateProperty('testData.foo', 'Item')(Key, true)
+        const updated = await makeUpdateProperty('testData.bar', 'Item')(Key, false)
+        const found = await ddb.get({ TableName, Key }).promise()
+        expect(inserted.updatedAt).not.toEqual(updated.updatedAt)
+        expect(updated.updatedAt).toEqual(found?.Item?.updatedAt)
+      })
     })
     describe('without options (attribute mode)', () => {
       it('function assigns a property, returning changes', async () => {
