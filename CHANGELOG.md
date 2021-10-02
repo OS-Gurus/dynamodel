@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/OS-Gurus/dynamodel/compare/v1.1.1...v1.1.2) (2021-10-02)
+
+
+### Bug Fixes
+
+* fix and test makeGetMeta ([#6](https://github.com/OS-Gurus/dynamodel/issues/6)) ([ab88a50](https://github.com/OS-Gurus/dynamodel/commit/ab88a50000dca8b973d636e75456ed5008044b83))
+
 ## [1.1.1](https://github.com/OS-Gurus/dynamodel/compare/v1.1.0...v1.1.1) (2021-09-30)
 
 
