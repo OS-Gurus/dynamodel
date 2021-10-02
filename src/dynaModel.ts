@@ -89,7 +89,7 @@ export const dynaModel = <
         TableName,
         Key,
         ExpressionAttributeNames: metaAttributeNames(),
-        ProjectionExpression: Object.keys(metaAttributeNames()).join('.')
+        ProjectionExpression: Object.keys(metaAttributeNames()).join(',')
       }).promise()
       return { ...Key, ...Item } as Item<Record<string, never>, HashKeys>
     }
