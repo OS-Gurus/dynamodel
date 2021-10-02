@@ -9,7 +9,7 @@ const ddb = new DynamoDB.DocumentClient({
 
 const TableName = 'test-data'
 const Key = { userId: 'test_userId' }
-const Item = { ...Key, test: process.env.JEST_WORKER_ID }
+const Item = { ...Key, test: process.env.JEST_WORKER_ID || '111' }
 type TestProps = {
   test: string
   testCount?: number
@@ -24,6 +24,7 @@ type TestProps = {
 const {
   makeGetAll,
   makeGet,
+  makeGetMeta,
   makeGetProperty,
   makeRemove,
   makeInsertProperty,
@@ -65,7 +66,16 @@ describe('providers > dynamo > dynaModel', () => {
     it('function gets record matching hash key', async () => {
       await ddb.put({ TableName, Item }).promise()
       await expect(makeGet()(Key))
-        .resolves.toEqual(expect.objectContaining(Key))
+        .resolves.toEqual(Item)
+    })
+  })
+  describe('makeGetMeta', () => {
+    it('function gets key and meta attributes only', async () => {
+      const createdAt = new Date().toISOString()
+      const updatedAt = new Date().toISOString()
+      await ddb.put({ TableName, Item: { ...Item, createdAt, updatedAt } }).promise()
+      await expect(makeGetMeta()(Key))
+        .resolves.toEqual({ ...Key, createdAt, updatedAt })
     })
   })
   describe('makeGetProperty', () => {
@@ -155,41 +165,54 @@ describe('providers > dynamo > dynaModel', () => {
       })
     })
     describe('with nested property', () => {
-      it('without parent, function creates parent, sets default, returns value', async () => {
-        await ddb.put({ TableName, Item }).promise()
-        const inserted = await makeInsertProperty('testData.foo')(Key, true)
-        const found = await ddb.get({ TableName, Key }).promise()
-        expect(inserted)
-          .toEqual(true)
-        expect((found.Item as TestProps).testData)
-          .toEqual({ foo: true })
+      describe('without options (attribute mode)', () => {
+        it('without parent, function creates parent, sets default, returns value', async () => {
+          await ddb.put({ TableName, Item }).promise()
+          const inserted = await makeInsertProperty('testData.foo')(Key, true)
+          const found = await ddb.get({ TableName, Key }).promise()
+          expect(inserted)
+            .toEqual(true)
+          expect((found.Item as TestProps).testData)
+            .toEqual({ foo: true })
+        })
+        it('with parent, with existing prop, function does nothing, returning existing', async () => {
+          await ddb.put({ TableName, Item: { ...Item, testData: { foo: true, bar: false } } }).promise()
+          const existing = await makeInsertProperty('testData.bar')(Key, true)
+          const found = await ddb.get({ TableName, Key }).promise()
+          expect(existing)
+            .toEqual(false)
+          expect((found.Item as TestProps).testData)
+            .toEqual({ foo: true, bar: false })
+        })
+        it('with parent, without existing prop, function sets default, returning value', async () => {
+          await ddb.put({ TableName, Item: { ...Item, testData: { foo: true } } }).promise()
+          const inserted = await makeInsertProperty('testData.bar')(Key, false)
+          const found = await ddb.get({ TableName, Key }).promise()
+          expect((found.Item as TestProps).testData)
+            .toEqual({ foo: true, bar: false })
+          expect(inserted)
+            .toEqual(false)
+        })
+        it('with parent, without existing prop or nesting, function adds nesting, returns value, makes only two requests', async () => {
+          await ddb.put({ TableName, Item: { ...Item, testData: { foo: true } } }).promise()
+          const inserted = await makeInsertProperty('testData.baz.qux')(Key, false)
+          const found = await ddb.get({ TableName, Key }).promise()
+          expect((found.Item as TestProps).testData)
+            .toEqual({ foo: true, baz: { qux: false } })
+          expect(inserted)
+            .toEqual(false)
+        })
       })
-      it('with parent, with existing prop, function does nothing, returning existing', async () => {
-        await ddb.put({ TableName, Item: { ...Item, testData: { foo: true, bar: false } } }).promise()
-        const existing = await makeInsertProperty('testData.bar')(Key, true)
-        const found = await ddb.get({ TableName, Key }).promise()
-        expect(existing)
-          .toEqual(false)
-        expect((found.Item as TestProps).testData)
-          .toEqual({ foo: true, bar: false })
-      })
-      it('with parent, without existing prop, function sets default, returning value', async () => {
-        await ddb.put({ TableName, Item: { ...Item, testData: { foo: true } } }).promise()
-        const inserted = await makeInsertProperty('testData.bar')(Key, false)
-        const found = await ddb.get({ TableName, Key }).promise()
-        expect((found.Item as TestProps).testData)
-          .toEqual({ foo: true, bar: false })
-        expect(inserted)
-          .toEqual(false)
-      })
-      it('with parent, without existing prop or nesting, function adds nesting, returns value, makes only two requests', async () => {
-        await ddb.put({ TableName, Item: { ...Item, testData: { foo: true } } }).promise()
-        const inserted = await makeInsertProperty('testData.baz.qux')(Key, false)
-        const found = await ddb.get({ TableName, Key }).promise()
-        expect((found.Item as TestProps).testData)
-          .toEqual({ foo: true, baz: { qux: false } })
-        expect(inserted)
-          .toEqual(false)
+      describe('with options (item mode)', () => {
+        it('sets value at path, returns item including meta attributes', async () => {
+          await ddb.put({ TableName, Item }).promise()
+          const inserted = await makeInsertProperty('testData.foo', 'Item')(Key, true)
+          const found = await ddb.get({ TableName, Key }).promise()
+          expect(inserted)
+            .toEqual({ ...Item, testData: { foo: true }, ...expectMeta })
+          expect(found.Item)
+            .toEqual({ ...Item, testData: { foo: true }, ...expectMeta })
+        })
       })
     })
     describe('with subsequent updates', () => {
