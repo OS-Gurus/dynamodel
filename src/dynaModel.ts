@@ -129,49 +129,101 @@ export const dynaModel = <
   }
 
   /**
+   * @internal
+   * @todo Couldn't figure out overload return types for different projections, so I use this to
+   *       export the different branches as two different functions, casting the return type.
+   *       Needs improvement to allow "natural" type flow and overloads, instead of hard-casting.
+   */
+  async function update <
+    P extends string,
+    T extends AtPath<Props, P>
+  > (Key: HashKeys, valueAtPath: T, path: PathOf<Props, P>, projection: Projection) {
+    const paths = path.split('.')
+    const value = nestedValue(paths, valueAtPath)
+    for (const index of paths.keys()) {
+      paths.splice(-1, index)
+      const result = await ddb.update({
+        Key,
+        TableName,
+        ReturnValues: 'ALL_NEW',
+        ConditionExpression: nestedCondition(paths),
+        ExpressionAttributeNames: {
+          ...metaAttributeNames(),
+          ...attributeNames(paths)
+        },
+        ExpressionAttributeValues: {
+          ...metaAttributeValues(),
+          ...updateValues(paths, value)
+        },
+        UpdateExpression: joinExpressions('SET', [
+          ...metaUpdateExpressions(),
+          updateExpression(paths)
+        ])
+      }).promise().catch(handleFailedCondition)
+      if (result?.Attributes) {
+        return projection === 'Attributes'
+          ? atPath(result.Attributes, path) as T
+          : result.Attributes as Item<Props, HashKeys>
+      }
+    }
+    throw new Error(`No attributes returned from update to ${path} on ${TableName}`)
+  }
+
+  /**
    * Set (upsert) an item property at given path.
    * If nested path given and parent object exists, update will apply at the given path.
    * If parent object doesn't exist it will be created with nested property as given.
    * It implicitly sets `updatedAt` and also `createdAt` on first update only.
    * @example
-   *   const updateUserName = set<UserData>('name')
-   *   await updateUserName('a_user_id', 'a_user_name')
+   *   const updateUserName = makeUpdateProperty<UserData>('name')
+   *   await updateUserName({ userId: 'a_user_id' }, 'a_user_name')
    */
-  function makeUpdateProperty <P extends string> (path: PathOf<Props, P>, projection?: 'Item'):
-    <T extends AtPath<Props, P>>(Key: HashKeys, valueAtPath: T) => Promise<Item<Props, HashKeys>>
-  function makeUpdateProperty <P extends string> (path: PathOf<Props, P>, projection?: 'Attributes'):
-    <T extends AtPath<Props, P>>(Key: HashKeys, valueAtPath: T) => Promise<T>
-  function makeUpdateProperty <P extends string> (path: PathOf<Props, P>, projection: Projection = 'Attributes') {
-    return async <T extends AtPath<Props, P>>(Key: HashKeys, valueAtPath: T) => {
-      const paths = path.split('.')
-      const value = nestedValue(paths, valueAtPath)
-      for (const index of paths.keys()) {
-        paths.splice(-1, index)
-        const result = await ddb.update({
-          Key,
-          TableName,
-          ReturnValues: 'ALL_NEW',
-          ConditionExpression: nestedCondition(paths),
-          ExpressionAttributeNames: {
-            ...metaAttributeNames(),
-            ...attributeNames(paths)
-          },
-          ExpressionAttributeValues: {
-            ...metaAttributeValues(),
-            ...updateValues(paths, value)
-          },
-          UpdateExpression: joinExpressions('SET', [
-            ...metaUpdateExpressions(),
-            updateExpression(paths)
-          ])
-        }).promise().catch(handleFailedCondition)
-        if (result?.Attributes) {
-          return projection === 'Attributes'
-            ? atPath(result.Attributes, path)
-            : result.Attributes
-        }
+  function makeUpdateProperty <P extends string> (path: PathOf<Props, P>) {
+    return <T extends AtPath<Props, P>>(Key: HashKeys, valueAtPath: T) =>
+      update<P, T>(Key, valueAtPath, path, 'Attributes') as Promise<T>
+  }
+
+  /** @alias makeUpdateProperty returning whole item instead of only update attributes. */
+  function makeUpdateInItem <P extends string> (path: PathOf<Props, P>) {
+    return <T extends AtPath<Props, P>>(Key: HashKeys, valueAtPath: T) =>
+      update<P, T>(Key, valueAtPath, path, 'Item') as Promise<Item<Props, HashKeys>>
+  }
+
+  /**
+   * @internal
+   * @todo as above with update overloads
+   */
+  async function insert <
+    P extends string,
+    T extends AtPath<Props, P>
+  > (Key: HashKeys, valueAtPath: T, path: PathOf<Props, P>, projection: Projection) {
+    const paths = path.split('.')
+    const value = nestedValue(paths, valueAtPath)
+    for (const index of paths.keys()) {
+      paths.splice(-1, index)
+      const result = await ddb.update({
+        Key,
+        TableName,
+        ReturnValues: 'ALL_NEW',
+        ConditionExpression: nestedCondition(paths),
+        ExpressionAttributeNames: {
+          ...metaAttributeNames(),
+          ...attributeNames(paths)
+        },
+        ExpressionAttributeValues: {
+          ...metaAttributeValues(),
+          ...updateValues(paths, value)
+        },
+        UpdateExpression: joinExpressions('SET', [
+          ...metaUpdateExpressions(),
+          insertExpression(paths)
+        ])
+      }).promise().catch(handleFailedCondition)
+      if (result && result.Attributes) {
+        return projection === 'Attributes'
+          ? atPath(result.Attributes, path)
+          : result.Attributes
       }
-      throw new Error(`No attributes returned from update to ${path} on ${TableName}`)
     }
   }
 
@@ -181,44 +233,18 @@ export const dynaModel = <
    * If parent object doesn't exist it will be created with nested property as given.
    * It implicitly sets `updatedAt` and also `createdAt` on first update only.
    * @example
-   *   const updateUserName = set<UserData>('name')
-   *   await updateUserName('a_user_id', 'a_user_name')
+   *   const insertUserName = makeInsertProperty<UserData>('name')
+   *   await updateUserName({ userId: 'a_user_id' }, 'a_user_name')
    */
-  function makeInsertProperty <P extends string> (path: PathOf<Props, P>, projection?: 'Item'):
-    <T extends AtPath<Props, P>>(Key: HashKeys, valueAtPath: T) => Promise<Item<Props, HashKeys>>
-  function makeInsertProperty <P extends string> (path: PathOf<Props, P>, projection?: 'Attributes'):
-    <T extends AtPath<Props, P>>(Key: HashKeys, valueAtPath: T) => Promise<T>
-  function makeInsertProperty <P extends string> (path: PathOf<Props, P>, projection: Projection = 'Attributes') {
-    return async <T extends AtPath<Props, P>>(Key: HashKeys, valueAtPath: T) => {
-      const paths = path.split('.')
-      const value = nestedValue(paths, valueAtPath)
-      for (const index of paths.keys()) {
-        paths.splice(-1, index)
-        const result = await ddb.update({
-          Key,
-          TableName,
-          ReturnValues: 'ALL_NEW',
-          ConditionExpression: nestedCondition(paths),
-          ExpressionAttributeNames: {
-            ...metaAttributeNames(),
-            ...attributeNames(paths)
-          },
-          ExpressionAttributeValues: {
-            ...metaAttributeValues(),
-            ...updateValues(paths, value)
-          },
-          UpdateExpression: joinExpressions('SET', [
-            ...metaUpdateExpressions(),
-            insertExpression(paths)
-          ])
-        }).promise().catch(handleFailedCondition)
-        if (result && result.Attributes) {
-          return projection === 'Attributes'
-            ? atPath(result.Attributes, path)
-            : result.Attributes
-        }
-      }
-    }
+  function makeInsertProperty <P extends string> (path: PathOf<Props, P>) {
+    return <T extends AtPath<Props, P>>(Key: HashKeys, valueAtPath: T) =>
+      insert<P, T>(Key, valueAtPath, path, 'Attributes') as Promise<T>
+  }
+
+  /** @alias makeInsertProperty return whole item instead of only inserted attributes. */
+  function makeInsertInItem <P extends string> (path: PathOf<Props, P>) {
+    return <T extends AtPath<Props, P>>(Key: HashKeys, valueAtPath: T) =>
+      insert<P, T>(Key, valueAtPath, path, 'Item') as Promise<Item<Props, HashKeys>>
   }
 
   return {
@@ -228,6 +254,8 @@ export const dynaModel = <
     makeGetProperty,
     makeRemove,
     makeUpdateProperty,
-    makeInsertProperty
+    makeUpdateInItem,
+    makeInsertProperty,
+    makeInsertInItem
   }
 }
