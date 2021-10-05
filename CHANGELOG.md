@@ -1,3 +1,17 @@
+# [2.0.0](https://github.com/OS-Gurus/dynamodel/compare/v1.1.2...v2.0.0) (2021-10-05)
+
+
+### Features
+
+* add update/insert methods that return item ([#7](https://github.com/OS-Gurus/dynamodel/issues/7)) ([3dc4466](https://github.com/OS-Gurus/dynamodel/commit/3dc4466a8fccda8368863486af4299739e7e553c))
+
+
+### BREAKING CHANGES
+
+* Projection parameter removed from update/insert methods, which are now different methods instead of branching on parameter. e.g.
+  - makeUpdateProperty(id, val, 'Item') == makeUpdateInItem(id, val)
+  - makeUpdateProperty(id, val, 'Attributes') == makeUpdateProperty(id, val)
+
 ## [1.1.2](https://github.com/OS-Gurus/dynamodel/compare/v1.1.1...v1.1.2) (2021-10-02)
 
 
