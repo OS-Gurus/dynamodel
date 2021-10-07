@@ -30,7 +30,7 @@ export type NonPartial<T> = { [K in keyof Required<T>]: T[K] };
  *   type UserItem = Item<{ name: string }, { userId: string }>
  *   // ☝️ type UserItem = { userId: string, name: string, createdAt: string, updatedAt: string }
  */
-type Item<Props, Key extends DocumentClient.Key> = Key & Props & MetaProps
+export type Item<Props, Key extends DocumentClient.Key> = Key & Props & MetaProps
 
 /** Option for update/insert methods. */
 type Projection = 'Item' | 'Attributes'
