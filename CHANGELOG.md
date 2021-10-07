@@ -1,3 +1,10 @@
+## [2.0.1](https://github.com/OS-Gurus/dynamodel/compare/v2.0.0...v2.0.1) (2021-10-07)
+
+
+### Bug Fixes
+
+* expose type utilities in dist ([#8](https://github.com/OS-Gurus/dynamodel/issues/8)) ([8514de8](https://github.com/OS-Gurus/dynamodel/commit/8514de8ab350b6895b51215a263f62ab17cbbf67))
+
 # [2.0.0](https://github.com/OS-Gurus/dynamodel/compare/v1.1.2...v2.0.0) (2021-10-05)
 
 
